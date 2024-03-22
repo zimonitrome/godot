@@ -40,6 +40,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.media.AudioManager
 import android.os.*
 import android.util.Log
 import android.util.TypedValue
@@ -146,6 +147,7 @@ class Godot private constructor(val context: Context) {
 	val isXrRuntime: Boolean by lazy { hasFeature("xr_runtime") }
 
 	val tts = GodotTTS(context)
+	val audio = GodotAudio(context)
 	val directoryAccessHandler = DirectoryAccessHandler(context)
 	val fileAccessHandler = FileAccessHandler(context)
 	val netUtils = GodotNetUtils(context)
@@ -335,7 +337,8 @@ class Godot private constructor(val context: Context) {
 
 			if (nativeLayerInitializeCompleted && !nativeLayerSetupCompleted) {
 				Log.v(TAG, "Setting up native layer with params: $commandLine")
-				nativeLayerSetupCompleted = GodotLib.setup(commandLine.toTypedArray(), tts)
+				val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+				nativeLayerSetupCompleted = GodotLib.setup(commandLine.toTypedArray(), tts, audioManager)
 				if (!nativeLayerSetupCompleted) {
 					throw IllegalStateException("Unable to setup the Godot engine! Aborting...")
 				} else {

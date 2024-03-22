@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  audio_driver_opensl.h                                                 */
+/*  string_android.h                                                      */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,81 +28,53 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#pragma once
+#ifndef STRING_ANDROID_H
+#define STRING_ANDROID_H
 
-#include "core/os/mutex.h"
-#include "servers/audio/audio_server.h"
+#include "thread_jandroid.h"
 
-#include <SLES/OpenSLES.h>
-#include <SLES/OpenSLES_Android.h>
+#include "core/string/ustring.h"
 
-class AudioDriverOpenSL : public AudioDriver {
-	bool active = false;
-	Mutex mutex;
+#include <jni.h>
 
-	enum {
-		BUFFER_COUNT = 2
-	};
-
-	bool pause = false;
-
-	uint32_t buffer_size = 0;
-	int16_t *buffers[BUFFER_COUNT] = {};
-	int32_t *mixdown_buffer = nullptr;
-	int last_free = 0;
-
-	Vector<int16_t> rec_buffer;
-
-	SLPlayItf playItf = nullptr;
-	SLRecordItf recordItf = nullptr;
-	SLObjectItf sl = nullptr;
-	SLEngineItf EngineItf = nullptr;
-	SLObjectItf OutputMix = nullptr;
-	SLObjectItf player = nullptr;
-	SLObjectItf recorder = nullptr;
-	SLAndroidSimpleBufferQueueItf bufferQueueItf = nullptr;
-	SLAndroidSimpleBufferQueueItf recordBufferQueueItf = nullptr;
-	SLDataSource audioSource;
-	SLDataFormat_PCM pcm;
-	SLDataSink audioSink;
-	SLDataLocator_OutputMix locator_outputmix;
-
-	static AudioDriverOpenSL *s_ad;
-
-	void _buffer_callback(
-			SLAndroidSimpleBufferQueueItf queueItf);
-
-	static void _buffer_callbacks(
-			SLAndroidSimpleBufferQueueItf queueItf,
-			void *pContext);
-
-	void _record_buffer_callback(
-			SLAndroidSimpleBufferQueueItf queueItf);
-
-	static void _record_buffer_callbacks(
-			SLAndroidSimpleBufferQueueItf queueItf,
-			void *pContext);
-
-	Error init_input_device();
-
-public:
-	virtual const char *get_name() const override {
-		return "Android";
+/**
+ * Converts JNI jstring to Godot String.
+ * @param source Source JNI string. If null an empty string is returned.
+ * @param env JNI environment instance. If null obtained by get_jni_env().
+ * @return Godot string instance.
+ */
+static inline String jstring_to_string(jstring source, JNIEnv *env = nullptr) {
+	String result;
+	if (source) {
+		if (!env) {
+			env = get_jni_env();
+		}
+		const char *const source_utf8 = env->GetStringUTFChars(source, nullptr);
+		if (source_utf8) {
+			result.parse_utf8(source_utf8);
+			env->ReleaseStringUTFChars(source, source_utf8);
+		}
 	}
+	return result;
+}
 
-	virtual Error init() override;
-	virtual void start() override;
-	virtual int get_mix_rate() const override;
-	virtual SpeakerMode get_speaker_mode() const override;
+/**
+ * Converts Java CharSequence to Godot String.
+ * @param source Source Java CharSequence. If null an empty string is returned.
+ * @param env JNI environment instance. If null obtained by get_jni_env().
+ * @return Godot string instance.
+ */
+static inline String char_sequence_to_string(jobject source, JNIEnv *env = nullptr) {
+	if (source) {
+		if (!env) {
+			env = get_jni_env();
+		}
 
-	virtual void lock() override;
-	virtual void unlock() override;
-	virtual void finish() override;
+		jclass cCharSequence = env->GetObjectClass(source);
+		jmethodID toString = env->GetMethodID(cCharSequence, "toString", "()Ljava/lang/String;");
+		return jstring_to_string((jstring)env->CallObjectMethod(source, toString), env);
+	}
+	return String();
+}
 
-	virtual Error input_start() override;
-	virtual Error input_stop() override;
-
-	void set_pause(bool p_pause);
-
-	AudioDriverOpenSL();
-};
+#endif // STRING_ANDROID_H
