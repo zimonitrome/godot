@@ -3636,6 +3636,20 @@ void GDScriptAnalyzer::reduce_call(GDScriptParser::CallNode *p_call, bool p_is_a
 		}
 		validate_call_arg(par_types, default_arg_count, method_flags.has_flag(METHOD_FLAG_VARARG), p_call);
 
+		if (base_type.kind == GDScriptParser::DataType::BUILTIN && base_type.builtin_type == Variant::ARRAY && return_type.kind == GDScriptParser::DataType::BUILTIN && return_type.builtin_type == Variant::ARRAY) {
+			if (p_call->function_name == SNAME("filter") && base_type.has_container_element_type(0)) {
+				return_type.set_container_element_type(0, base_type.get_container_element_type(0));
+			} else if (p_call->function_name == SNAME("map") && !p_call->arguments.is_empty()) {
+				const GDScriptParser::DataType &callable_type = p_call->arguments[0]->get_datatype();
+				if (callable_type.kind == GDScriptParser::DataType::BUILTIN && callable_type.builtin_type == Variant::CALLABLE) {
+					GDScriptParser::DataType mapped_type = type_from_property(callable_type.method_info.return_val);
+					if (mapped_type.is_hard_type() && !(mapped_type.kind == GDScriptParser::DataType::BUILTIN && mapped_type.builtin_type == Variant::NIL) && !mapped_type.is_variant()) {
+						return_type.set_container_element_type(0, mapped_type);
+					}
+				}
+			}
+		}
+
 		if (base_type.kind == GDScriptParser::DataType::ENUM && base_type.is_meta_type) {
 			// Enum type is treated as a dictionary value for function calls.
 			base_type.is_meta_type = false;
@@ -4679,6 +4693,8 @@ void GDScriptAnalyzer::reduce_lambda(GDScriptParser::LambdaNode *p_lambda) {
 	GDScriptParser::LambdaNode *previous_lambda = current_lambda;
 	current_lambda = p_lambda;
 	resolve_function_signature(p_lambda->function, p_lambda, true);
+	lambda_type.method_info = p_lambda->function->info;
+	p_lambda->set_datatype(lambda_type);
 	current_lambda = previous_lambda;
 
 	pending_body_resolution_lambdas.push_back(p_lambda);
