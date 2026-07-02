@@ -31,6 +31,10 @@
 #include "audio_driver_oboe.h"
 
 #include "java_godot_wrapper.h"
+#include "jni_utils.h"
+#include "thread_jandroid.h"
+
+#include "core/os/os.h"
 
 // https://developer.android.com/reference/android/Manifest.permission
 #define PERMISSION_RECORD_AUDIO "android.permission.RECORD_AUDIO"

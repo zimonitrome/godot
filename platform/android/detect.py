@@ -203,6 +203,10 @@ def configure(env: "SConsEnvironment"):
         CCFLAGS=(["-fpic", "-ffunction-sections", "-funwind-tables", "-fstack-protector-strong", "-fvisibility=hidden"])
     )
 
+    # os_android.h holds an AudioDriverOboe member, so every module that includes it (camera, openxr, …)
+    # needs the Oboe headers on the include path. Add it globally rather than per-module.
+    env.Prepend(CPPPATH=["#thirdparty/oboe/include"])
+
     if should_enable_perfetto(env):
         has_perfetto = detect_perfetto()
         if not has_perfetto:

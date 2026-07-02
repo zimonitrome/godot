@@ -32,7 +32,7 @@
 #define AUDIO_DRIVER_OBOE_H
 
 #include "core/os/mutex.h"
-#include "servers/audio_server.h"
+#include "servers/audio/audio_server.h"
 
 #include "oboe/Oboe.h"
 

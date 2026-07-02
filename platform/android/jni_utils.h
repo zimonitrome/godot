@@ -90,6 +90,19 @@ static inline String jstring_to_string(jstring source, JNIEnv *env = nullptr) {
 	return result;
 }
 
+// Converts a Java CharSequence to a Godot String (added for AudioDriverOboe device names).
+static inline String char_sequence_to_string(jobject source, JNIEnv *env = nullptr) {
+	if (source) {
+		if (!env) {
+			env = get_jni_env();
+		}
+		jclass cCharSequence = env->GetObjectClass(source);
+		jmethodID toString = env->GetMethodID(cCharSequence, "toString", "()Ljava/lang/String;");
+		return jstring_to_string((jstring)env->CallObjectMethod(source, toString), env);
+	}
+	return String();
+}
+
 /**
  * Set up thread-safe Android ClassLoader (used by jni_find_class() below).
  */
